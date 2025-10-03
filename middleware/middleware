@@ -1,0 +1,34 @@
+const jwt = require("jsonwebtoken");
+const User = require("../model/userSchema");
+
+const authorizedUser = async (req, res, next) => {
+  const token = req.cookies.access;
+
+  if (!token) {
+    return res.status(400).json({
+      responseMsg: "Please login again",
+      success: false,
+    });
+  }
+
+  const decodedToken = jwt.verify(token, process.env.SECRET_KEY);
+
+  console.log(`##`, decodedToken.iat * 1000);
+
+  const userID = decodedToken.id;
+
+  const user = await User.findOne({ where: { id: userID } });
+
+  if (decodedToken.iat > decodedToken.exp) {
+    return res.status(400).json({
+      responseMsg: "Access denied! Login again",
+      success: false,
+    });
+  }
+
+  req.user = user;
+
+  next();
+};
+
+module.exports = authorizedUser;
